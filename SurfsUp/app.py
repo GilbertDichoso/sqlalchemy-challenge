@@ -1,16 +1,17 @@
 # Import the dependencies.
-
-from flask import Flask, jsonify
+import csv
+import numpy as np
+import pandas as pd
 import datetime as dt
 from sqlalchemy import create_engine, func
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import inspect
+from flask import Flask, jsonify
 
 
 #################################################
 # Database Setup
-
 #################################################
 
 # Create engine using the `hawaii.sqlite` database file
@@ -30,13 +31,6 @@ Station = Base.classes.station
 # Create a session
 session = Session(engine)
 
-# Create an inspector and connect it to the engine
-inspector = inspect(engine)
-
-# Get the table names
-table_names = inspector.get_table_names()
-
-print(table_names)
 
 
 #################################################
@@ -46,6 +40,7 @@ print(table_names)
 app = Flask(__name__)
 
 
+ 
 #################################################
 # Flask Routes
 #################################################
@@ -54,7 +49,7 @@ app = Flask(__name__)
 @app.route("/")
 def homepage():
     return (
-        f"Welcome to the Climate App!<br/><br/>"
+        f"Welcome to the Hawaii Climate App!<br/><br/>"
         f"Available Routes:<br/>"
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
@@ -67,7 +62,7 @@ def homepage():
 def precipitation():
     session = Session(engine)
     # Query the last 12 months of precipitation data
-    one_year_ago = dt.date.today() - dt.timedelta(days=365)
+    one_year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     results = session.query(Measurement.date, Measurement.prcp).\
         filter(Measurement.date >= one_year_ago).all()
     session.close()
@@ -76,6 +71,7 @@ def precipitation():
     precipitation_data = {date: prcp for date, prcp in results}
     
     return jsonify(precipitation_data)
+
 
 @app.route("/api/v1.0/stations")
 def stations():
@@ -89,6 +85,7 @@ def stations():
     
     return jsonify(stations_list)
 
+
 @app.route("/api/v1.0/tobs")
 def tobs():
     session = Session(engine)
@@ -96,7 +93,7 @@ def tobs():
     most_active_station = session.query(Measurement.station).\
         group_by(Measurement.station).\
         order_by(func.count(Measurement.station).desc()).first()[0]
-    one_year_ago = dt.date.today() - dt.timedelta(days=365)
+    one_year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     results = session.query(Measurement.date, Measurement.tobs).\
         filter(Measurement.station == most_active_station).\
         filter(Measurement.date >= one_year_ago).all()
@@ -106,6 +103,7 @@ def tobs():
     tobs_data = [{"Date": date, "Temperature": tobs} for date, tobs in results]
     
     return jsonify(tobs_data)
+
 
 @app.route("/api/v1.0/<start>")
 def temperature_start(start):
@@ -119,6 +117,7 @@ def temperature_start(start):
     temperature_data = [{"TMIN": tmin, "TAVG": tavg, "TMAX": tmax} for tmin, tavg, tmax in results]
     
     return jsonify(temperature_data)
+
 
 @app.route("/api/v1.0/<start>/<end>")
 def temperature_start_end(start, end):
